@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INST377 Lab 6 - Map Coordinates</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    
+    <style>
+        #map {
+            height: 400px;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        
+        .coordinates-container {
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .marker-info {
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="coordinates-container">
+        <div id="map"></div>
+        <div id="coordinates-list"></div>
+    </div>
+
+    <!-- Leaflet JavaScript -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script>
+        function getRandomInRange(from, to, fixed) {
+            return (Math.random() * (to - from) + from).toFixed(fixed) * 1;
+        }
+
+        async function getLocality(latitude, longitude) {
+            try {
+                const response = await fetch(
+                    `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
+                );
+                const data = await response.json();
+                return data.locality || 'Unknown Location';
+            } catch (error) {
+                console.error('Error fetching locality:', error);
+                return 'Error fetching location';
+            }
+        }
+
+        function createMarkerInfo(index, latitude, longitude, locality) {
+            return `
+                <div class="marker-info">
+                    <h3>Marker ${index}</h3>
+                    <p>Coordinates: ${latitude}, ${longitude}</p>
+                    <p>Locality: ${locality}</p>
+                </div>
+            `;
+        }
+
+        const map = L.map('map').setView([32.5, -95], 5); 
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        async function initializeMarkers() {
+            const coordinatesList = document.getElementById('coordinates-list');
+            let markersHTML = '';
+
+            for (let i = 1; i <= 3; i++) {
+                const latitude = getRandomInRange(30, 35, 3);
+                const longitude = getRandomInRange(-90, -100, 3);
+                
+                const marker = L.marker([latitude, longitude]).addTo(map);
+                
+                const locality = await getLocality(latitude, longitude);
+                
+                marker.bindPopup(`Marker ${i}<br>Coordinates: ${latitude}, ${longitude}<br>Locality: ${locality}`);
+                
+                markersHTML += createMarkerInfo(i, latitude, longitude, locality);
+            }
+
+            coordinatesList.innerHTML = markersHTML;
+        }
+        
+        initializeMarkers();
+    </script>
+</body>
+</html>
